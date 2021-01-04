@@ -1,3 +1,7 @@
+# NOTE
+
+This is a modified version of the [original repository](https://github.com/yang-zhang/lightning-language-modeling) by Yang Zhang. Main extension is to be able to train a transformer from scratch.
+
 # lightning-language-modeling
 Language Modeling Example with [Pytorch Lightning](https://pytorch-lightning.readthedocs.io/en/stable/) and [🤗 Huggingface Transformers](https://huggingface.co/transformers/).
 

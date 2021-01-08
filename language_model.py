@@ -1,11 +1,11 @@
 from argparse import ArgumentParser
+import os
 import pytorch_lightning as pl
 from transformers import (
+    AdamW,
     AutoModelForMaskedLM,
     AutoConfig,
 )
-import transformers
-from transformers.optimization import AdamW
 from data import LMDataModule
 
 
@@ -35,24 +35,27 @@ class LMModel(pl.LightningModule):
             self.model = AutoModelForMaskedLM.from_config(config=config)
 
     def forward(self, x):
-        return self.model(x)['logits']
+        output = self.model(x)
+        return output['logits']
 
     def training_step(self, batch, batch_idx):
-        loss = self.model(**batch)['loss']
+        output = self.model(**batch)
+        loss = output['loss']
         self.log('train_loss', loss, on_epoch=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss = self.model(**batch)['loss']
-        self.log('valid_loss', loss, on_step=True, sync_dist=True)
-        return loss
+        val_loss = self.model(**batch)['loss']
+        self.log('valid_loss', val_loss, on_epoch=True, prog_bar=True)
+        return val_loss
 
     def configure_optimizers(self):
         optimizer = AdamW(self.parameters(),
-                          self.hparams.learning_rate,
+                          lr=self.hparams.learning_rate,
                           betas=(self.hparams.adam_beta1,
                                  self.hparams.adam_beta2),
-                          eps=self.hparams.adam_epsilon, )
+                          eps=self.hparams.adam_epsilon,
+                          )
         return optimizer
 
     @staticmethod
@@ -89,12 +92,11 @@ def cli_main():
     data_module = LMDataModule.from_argparse_args(args)
 
     # model
-    lmmodel = LMModel(**vars(args))
+    model = LMModel(**vars(args))
 
     # training
-    trainer = pl.Trainer.from_argparse_args(args)
-    trainer.fit(lmmodel, data_module)
-
+    trainer = pl.Trainer.from_argparse_args(args) #, fast_dev_run=True)
+    trainer.fit(model, data_module)
 
 if __name__ == '__main__':
     cli_main()

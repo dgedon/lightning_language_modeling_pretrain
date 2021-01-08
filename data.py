@@ -14,8 +14,8 @@ from transformers import (
 class LMDataModule(pl.LightningDataModule):
     def __init__(self,
                  model_name_or_path: str = 'bert-base-cased',
-                 train_file: str = "data/wikitext-2/wiki.train.small.raw",
-                 validation_file: str = "data/wikitext-2/wiki.valid.small.raw",
+                 train_file: str = "data/wikitext-103-raw/wiki.train.small.raw",
+                 validation_file: str = "data/wikitext-103-raw/wiki.valid.small.raw",
                  line_by_line: bool = False,
                  pad_to_max_length: bool = False,
                  preprocessing_num_workers: int = 4,
@@ -23,8 +23,9 @@ class LMDataModule(pl.LightningDataModule):
                  max_seq_length: int = 32,
                  mlm_probability: float = 0.15,
                  train_batch_size: int = 4,
-                 val_batch_size: int = 8,
+                 eval_batch_size: int = 8,
                  dataloader_num_workers: int = 4,
+                 use_fast_tokenizer: bool = False,
                  **kwargs
                  ):
         super().__init__()
@@ -39,11 +40,14 @@ class LMDataModule(pl.LightningDataModule):
         self.max_seq_length = max_seq_length
         self.mlm_probability = mlm_probability
         self.train_batch_size = train_batch_size
-        self.val_batch_size = val_batch_size
+        self.eval_batch_size = eval_batch_size
         self.dataloader_num_workers = dataloader_num_workers
+        self.use_fast_tokenizer = use_fast_tokenizer
+
+        # load the tokenizer (always use the pretrained tokenizer)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, use_fast=self.use_fast_tokenizer)
 
     def setup(self, stage):
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
         extension = self.train_file.split(".")[-1]
         if extension in ("txt", "raw"):
             extension = "text"
@@ -137,13 +141,25 @@ class LMDataModule(pl.LightningDataModule):
             )
 
         data_collator = DataCollatorForLanguageModeling(
-            tokenizer=self.tokenizer, mlm_probability=self.mlm_probability)
+            tokenizer=self.tokenizer,
+            mlm_probability=self.mlm_probability)
 
         train_dataset = tokenized_datasets["train"]
         eval_dataset = tokenized_datasets["validation"]
         self.train_dataset = train_dataset
         self.eval_dataset = eval_dataset
         self.data_collator = data_collator
+
+    def prepare_data(self):
+        extension = self.train_file.split(".")[-1]
+        if extension in ("txt", "raw"):
+            extension = "text"
+        data_files = {}
+        data_files["train"] = self.train_file
+        data_files["validation"] = self.validation_file
+        load_dataset(extension, data_files=data_files)
+
+        AutoTokenizer.from_pretrained(self.model_name_or_path, use_fast=self.use_fast_tokenizer)
 
     def train_dataloader(self):
         return DataLoader(
@@ -156,7 +172,7 @@ class LMDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(
             self.eval_dataset,
-            batch_size=self.val_batch_size,
+            batch_size=self.eval_batch_size,
             collate_fn=self.data_collator,
             num_workers=self.dataloader_num_workers,
         )
@@ -175,6 +191,7 @@ class LMDataModule(pl.LightningDataModule):
         parser.add_argument('--max_seq_length', type=int, default=32)
         parser.add_argument('--mlm_probability', type=float, default=0.15)
         parser.add_argument('--train_batch_size', type=int, default=4)
-        parser.add_argument('--val_batch_size', type=int, default=8)
+        parser.add_argument('--eval_batch_size', type=int, default=8)
         parser.add_argument('--dataloader_num_workers', type=int, default=4)
+        parser.add_argument("--use_fast_tokenizer", default=False, type=bool)
         return parser

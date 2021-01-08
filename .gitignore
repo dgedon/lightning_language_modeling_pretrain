@@ -133,3 +133,4 @@ dmypy.json
 /data
 /server
 .idea/
+/lightning_logs

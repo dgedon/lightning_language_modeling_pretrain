@@ -25,7 +25,7 @@ class LMDataModule(pl.LightningDataModule):
                  train_batch_size: int = 4,
                  eval_batch_size: int = 8,
                  dataloader_num_workers: int = 4,
-                 use_fast_tokenizer: bool = False,
+                 use_fast_tokenizer: bool = True,
                  **kwargs
                  ):
         super().__init__()
@@ -181,9 +181,9 @@ class LMDataModule(pl.LightningDataModule):
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument('--train_file', type=str,
-                            default=os.path.join(os.getcwd(), "data/wikitext-2-raw/wiki.train.raw"))
+                            default=os.path.join(os.getcwd(), "data/wikitext-103-raw/wiki.train.raw"))
         parser.add_argument('--validation_file', type=str,
-                            default=os.path.join(os.getcwd(), "data/wikitext-2-raw/wiki.valid.raw"))
+                            default=os.path.join(os.getcwd(), "data/wikitext-103-raw/wiki.valid.raw"))
         parser.add_argument('--line_by_line', action='store_true', default=False)
         parser.add_argument('--pad_to_max_length', action='store_true', default=False)
         parser.add_argument('--preprocessing_num_workers', type=int, default=4)
@@ -193,5 +193,5 @@ class LMDataModule(pl.LightningDataModule):
         parser.add_argument('--train_batch_size', type=int, default=4)
         parser.add_argument('--eval_batch_size', type=int, default=8)
         parser.add_argument('--dataloader_num_workers', type=int, default=4)
-        parser.add_argument("--use_fast_tokenizer", default=False, type=bool)
+        parser.add_argument("--use_fast_tokenizer", default=True, type=bool)
         return parser

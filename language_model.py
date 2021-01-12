@@ -24,14 +24,10 @@ class LMModel(pl.LightningModule):
         self.save_hyperparameters()
 
         if use_pretrained_model:
-            config = AutoConfig.from_pretrained(
-                model_name_or_path, return_dict=True)
-            self.model = AutoModelForMaskedLM.from_pretrained(
-                model_name_or_path,
-                config=config)
+            config = AutoConfig.from_pretrained(model_name_or_path, return_dict=True)
+            self.model = AutoModelForMaskedLM.from_pretrained(model_name_or_path, config=config)
         else:
-            config = AutoConfig.from_pretrained(
-                model_name_or_path, return_dict=True)
+            config = AutoConfig.from_pretrained(model_name_or_path, return_dict=True)
             self.model = AutoModelForMaskedLM.from_config(config=config)
 
     def forward(self, x):
@@ -82,7 +78,7 @@ def cli_main():
     parser = ArgumentParser()
     parser.add_argument('--model_name_or_path', type=str, default="bert-base-cased")
     parser.add_argument('--use_pretrained_model', action='store_true', default=False)
-    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--seed', type=int, default=1234)
     args = parse_args(parser)
 
     # seed
